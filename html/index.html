@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ja">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+        <link rel="stylesheet" href="css/style.css">
+
+        <title>レジ</title>
+    </head>
+    <body>
+        <div class="container">
+            <div class="row mt-2">
+                <div class="col">
+                    <h1 class="text-center">レジシステム</h1>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col">商品マスタの選択：</div>
+            </div>
+            <div class="row">
+                <div class="col-9">
+                    <input type="file" class="form-control-file" id="inputFile">
+                </div>
+                <div class="col-3">
+                    <button class="btn btn-primary" id="masterUpload">マスタ登録</button>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    商品選択：
+                    <select name="" id="itemList" class="form-control"></select>
+                    <div class="mt-2"></div>
+                </div>
+                <div class="col-6">
+                    個数入力：
+                    <input type="number" id="itemCount" class="form-control">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <button type="button" id="addItemBtn" class="btn btn-primary mt-2">商品追加</button>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-6">
+                    <h4 class="text-center">商品カート</h4>
+                    <textarea readonly id="itemCart" class="form-control bg-white"></textarea>
+                </div>
+                <div class="col-6">
+                    <p class="total-font mt-4">
+                        カートの商品数：<span id="orderCount">0</span> 個<br>
+                        
+                        合計金額：￥<span id="totalPrice">0</span>
+                    </p>
+                    <button type="button" id="resetBtn" class="btn btn-block btn-lg btn-danger">カート削除</button>
+                    <hr>
+                    <p>
+                        お支払金額入力：
+                        <input type="number" id="paymentInput" class="form-control">
+                    </p>
+                    <button type="button" id="payBtn" class="btn btn-block btn-lg btn-success">支払処理</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        <script src="js/jquery-3.6.0.slim.min.js"></script>
+        <script src="js/bootstrap.bundle.min.js"></script>
+
+        <script type="text/javascript" src="/eel.js"></script>
+
+        <script>
+            // グローバル変数
+            let itemCodeList = [];
+            let masterFileName = "";
+
+            // 各エリアの初期化処理
+            function reset() {
+                itemCodeList = [];
+                itemCart.value = "";
+                orderCount.innerHTML = 0;
+                totalPrice.innerHTML = 0;
+            }
+
+            // マスタ登録のボタンクリック処理（課題３）
+            masterUpload.addEventListener("click", () => {
+                // パスから最後のファイル名を取り出してグローバル変数に保存
+                const pathList = inputFile.value.split("\\");
+                masterFileName = pathList[pathList.length - 1];
+
+                eel.create_select(masterFileName);
+            });
+
+            // 商品追加のボタンクリック処理
+            addItemBtn.addEventListener("click", () => {
+                // 商品名から金額を取得
+                let itemName = itemList.options[itemList.selectedIndex].innerHTML;
+                let price = Number(itemName.split("￥")[1]);
+                let count = Number(itemCount.value);
+
+                if (count > 0) {
+                    for (let i = 0; i < count; i++) {
+                        // カートに商品を追加
+                        itemCart.value += itemName;
+                        itemCart.value += "\n";
+
+                        // 商品コードをグローバル変数に追加
+                        let itemCode = itemList.options[itemList.selectedIndex].value;
+                        itemCodeList.push(itemCode);
+                    }
+                    // 個数と合計金額の書き換え
+                    orderCount.innerHTML = itemCodeList.length;
+                    totalPrice.innerHTML = Number(totalPrice.innerHTML) + price * count;
+                }
+            });
+
+            // カート削除のボタンクリック処理（課題４，独自機能）
+            resetBtn.addEventListener("click", () => {
+                reset();
+            })
+
+            // 支払処理のボタンクリック処理
+            payBtn.addEventListener("click", () => {
+                payment = paymentInput.value;
+                if (payment) {
+                    eel.pay(itemCodeList, payment, masterFileName);
+                }
+            });
+
+            // 商品選択のセレクトボックスを作成（課題４，独自機能）
+            eel.expose(set_items);
+            function set_items(items) {
+                for(let i = 0; i < items.length; i++) {
+                    const option = document.createElement('option');
+                    option.setAttribute('value', items[i].code);
+                    option.innerHTML = `${items[i].name}/￥${items[i].price}`;
+                    itemList.appendChild(option);
+                }
+            }
+
+            // 支払処理の結果を表示（課題４，独自機能）
+            eel.expose(pay_result);
+            function pay_result(receiptFileName) {
+                if (receiptFileName) {
+                    alert(`レシートを発行しました[${receiptFileName}]`);
+                    reset()
+                } else {
+                    alert("金額が足りません")
+                }
+            }
+
+        </script>
+    </body>
+</html>
